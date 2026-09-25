@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kampung Guyub - Media Pembelajaran</title>
+    
+    <!-- Memuat Font dari Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* === PENGATURAN WARNA & TATA LETAK DASAR === */
+        :root {
+            --bg-color: #f9f6f0;
+            --primary-green: #2e7d32;
+            --light-green: #e8f5e9;
+            --pin-default: #ff9800;
+            --pin-visited: #4caf50;
+            --text-dark: #333333;
+            --text-light: #666666;
+            --white: #ffffff;
+            --border-radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-dark); line-height: 1.6; padding: 20px; }
+        h1, h2, h3 { font-family: 'Lora', serif; color: var(--primary-green); }
+        header { text-align: center; margin-bottom: 24px; }
+        header p { color: var(--text-light); font-size: 1.1rem; }
+
+        .main-container { display: flex; flex-direction: column; gap: 24px; max-width: 1200px; margin: 0 auto; }
+        @media (min-width: 800px) { .main-container { flex-direction: row; } }
+
+        /* === PENGATURAN PETA SVG === */
+        .map-container { flex: 2; background-color: var(--light-green); border-radius: var(--border-radius); box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; position: relative; }
+        svg { width: 100%; height: auto; display: block; }
+        
+        .pin { cursor: pointer; transition: transform 0.2s, fill 0.3s; outline: none; }
+        .pin:hover, .pin:focus { transform: scale(1.1) translateY(-3px); }
+        .pin-bg { fill: var(--pin-default); transition: fill 0.3s; }
+        .pin.visited .pin-bg { fill: var(--pin-visited); }
+
+        /* === PENGATURAN PANEL MATERI === */
+        .content-panel { flex: 1; background: var(--white); padding: 24px; border-radius: var(--border-radius); box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        .content-placeholder { text-align: center; color: var(--text-light); margin: auto 0; font-style: italic; }
+        .content-active { display: none; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .content-title { font-size: 1.5rem; margin-bottom: 12px; border-bottom: 2px solid var(--light-green); padding-bottom: 8px; }
+        .content-text { margin-bottom: 20px; }
+
+        /* === PENGATURAN KOTAK TANTANGAN (KUIS) === */
+        .challenge-box { background-color: #fff3e0; padding: 16px; border-radius: 8px; border: 1px dashed #ff9800; margin-bottom: 20px; }
+        .challenge-box h4 { color: #e65100; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        
+        .option-btn { background-color: var(--white); color: var(--text-dark); border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; cursor: pointer; width: 100%; text-align: left; margin-bottom: 8px; transition: all 0.2s; font-size: 0.95rem; }
+        .option-btn:hover { border-color: var(--pin-default); background-color: #fff8e1; }
+        .option-btn.correct { background-color: #c8e6c9; border-color: var(--primary-green); color: var(--primary-green); font-weight: bold; }
+        .option-btn.wrong { background-color: #ffcdd2; border-color: #c62828; color: #c62828; }
+        #challenge-feedback { font-size: 0.9rem; font-weight: bold; margin-top: 8px; min-height: 20px; }
+
+        /* === PENGATURAN FORMULIR REFLEKSI & IDENTITAS === */
+        .reflection-box { background-color: var(--bg-color); padding: 16px; border-radius: 8px; border: 1px solid #e0e0e0; }
+        .reflection-box label { font-weight: 600; display: block; margin-bottom: 8px; color: var(--primary-green); font-size: 0.95rem; }
+        .input-group { background-color: var(--white); padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid #ccc; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical; margin-bottom: 12px; }
+        
+        .btn-simpan { background-color: var(--primary-green); color: var(--white); border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; transition: background 0.2s;}
+        .btn-simpan:hover { background-color: #1b5e20; }
+        .btn-simpan:disabled { background-color: #9e9e9e; cursor: not-allowed; }
+        #save-status { font-size: 0.9rem; color: var(--primary-green); margin-top: 8px; text-align: center; min-height: 20px; font-weight: 600; }
+        
+        .footer-credit { text-align: center; font-size: 0.85rem; color: var(--text-light); margin-top: 40px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Kampung Guyub</h1>
+        <p>Eksplorasi Nilai Gotong Royong dan Kepedulian Sosial</p>
+    </header>
+
+    <div class="main-container">
+        <!-- AREA KIRI: Peta Interaktif -->
+        <div class="map-container">
+            <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+                <!-- Latar dan Jalan -->
+                <rect width="800" height="600" fill="#e8f5e9"/>
+                <path d="M 0 300 Q 400 350 800 250" fill="none" stroke="#cfd8dc" stroke-width="40"/>
+                <path d="M 400 325 L 400 600" fill="none" stroke="#cfd8dc" stroke-width="30"/>
+                <path d="M 400 325 L 600 0" fill="none" stroke="#cfd8dc" stroke-width="30"/>
+                
+                <!-- Bangunan Dekoratif -->
+                <rect x="100" y="200" width="120" height="80" fill="#aed581" rx="8"/>
+                <circle cx="200" cy="450" r="70" fill="#c5e1a5"/>
+                <polygon points="650,400 730,400 690,340" fill="#ffcc80"/>
+                <rect x="550" y="100" width="90" height="90" fill="#bcaaa4" rx="4"/>
+                <rect x="350" y="150" width="60" height="40" fill="#ffab91" rx="2"/>
+
+                <!-- Pin 1: Balai Warga (Dengan hitbox transparan yang besar) -->
+                <g class="pin" id="pin-1" transform="translate(160, 240)">
+                    <circle cx="0" cy="-25" r="40" fill="transparent" cursor="pointer"/>
+                    <path class="pin-bg" d="M0,0 C-12,-15 -20,-25 -20,-35 C-20,-46 -11,-55 0,-55 C11,-55 20,-46 20,-35 C20,-25 12,-15 0,0 Z"/>
+                    <circle cx="0" cy="-35" r="8" fill="white"/>
+                    <text x="-4" y="-31" font-size="12" font-family="Inter" font-weight="bold" fill="#333">1</text>
+                </g>
+
+                <!-- Pin 2: Lapangan -->
+                <g class="pin" id="pin-2" transform="translate(200, 450)">
+                    <circle cx="0" cy="-25" r="40" fill="transparent" cursor="pointer"/>
+                    <path class="pin-bg" d="M0,0 C-12,-15 -20,-25 -20,-35 C-20,-46 -11,-55 0,-55 C11,-55 20,-46 20,-35 C20,-25 12,-15 0,0 Z"/>
+                    <circle cx="0" cy="-35" r="8" fill="white"/>
+                    <text x="-4" y="-31" font-size="12" font-family="Inter" font-weight="bold" fill="#333">2</text>
+                </g>
+
+                <!-- Pin 3: Posko Bencana -->
+                <g class="pin" id="pin-3" transform="translate(690, 400)">
+                    <circle cx="0" cy="-25" r="40" fill="transparent" cursor="pointer"/>
+                    <path class="pin-bg" d="M0,0 C-12,-15 -20,-25 -20,-35 C-20,-46 -11,-55 0,-55 C11,-55 20,-46 20,-35 C20,-25 12,-15 0,0 Z"/>
+                    <circle cx="0" cy="-35" r="8" fill="white"/>
+                    <text x="-4" y="-31" font-size="12" font-family="Inter" font-weight="bold" fill="#333">3</text>
+                </g>
+
+                <!-- Pin 4: Studio DKV Mini -->
+                <g class="pin" id="pin-4" transform="translate(595, 145)">
+                    <circle cx="0" cy="-25" r="40" fill="transparent" cursor="pointer"/>
+                    <path class="pin-bg" d="M0,0 C-12,-15 -20,-25 -20,-35 C-20,-46 -11,-55 0,-55 C11,-55 20,-46 20,-35 C20,-25 12,-15 0,0 Z"/>
+                    <circle cx="0" cy="-35" r="8" fill="white"/>
+                    <text x="-4" y="-31" font-size="12" font-family="Inter" font-weight="bold" fill="#333">4</text>
+                </g>
+
+                <!-- Pin 5: Papan Pengumuman -->
+                <g class="pin" id="pin-5" transform="translate(380, 170)">
+                    <circle cx="0" cy="-25" r="40" fill="transparent" cursor="pointer"/>
+                    <path class="pin-bg" d="M0,0 C-12,-15 -20,-25 -20,-35 C-20,-46 -11,-55 0,-55 C11,-55 20,-46 20,-35 C20,-25 12,-15 0,0 Z"/>
+                    <circle cx="0" cy="-35" r="8" fill="white"/>
+                    <text x="-4" y="-31" font-size="12" font-family="Inter" font-weight="bold" fill="#333">5</text>
+                </g>
+            </svg>
+        </div>
+
+        <!-- AREA KANAN: Panel Materi -->
+        <div class="content-panel">
+            <!-- Tampilan Awal (Sebelum ada pin yang diklik) -->
+            <div id="placeholder-ui" class="content-placeholder">
+                <h3>Selamat Datang di Kampung Guyub!</h3>
+                <p>Klik salah satu pin lokasi di peta untuk mengeksplorasi materi dan menaklukkan tantangannya.</p>
+            </div>
+
+            <!-- Tampilan Materi Utama -->
+            <div id="active-ui" class="content-active">
+                <h2 id="content-title" class="content-title">Judul Lokasi</h2>
+                <div id="content-text" class="content-text">Isi materi akan muncul di sini.</div>
+                
+                <!-- Kotak Tantangan Pilihan Ganda -->
+                <div class="challenge-box">
+                    <h4>🎯 Uji Pemahamanmu!</h4>
+                    <p id="challenge-question" style="margin-bottom: 12px; font-weight: 600;"></p>
+                    <div id="challenge-options"></div>
+                    <div id="challenge-feedback"></div>
+                </div>
+                
+                <!-- Kotak Form Identitas & Refleksi -->
+                <div class="reflection-box">
+                    <div class="input-group">
+                        <label for="nama-siswa">Nama Lengkap:</label>
+                        <input type="text" id="nama-siswa" placeholder="Masukkan namamu">
+                        
+                        <label for="absen-siswa" style="margin-top: 8px;">Nomor Absen:</label>
+                        <input type="number" id="absen-siswa" placeholder="Contoh: 15">
+                    </div>
+
+                    <label for="reflection-input" id="reflection-question">Pertanyaan Refleksi?</label>
+                    <textarea id="reflection-input" placeholder="Tulis pendapatmu di sini..."></textarea>
+                    
+                    <button class="btn-simpan" id="btn-simpan" onclick="saveAnswer()">Kirim ke Guru</button>
+                    <div id="save-status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kredit Kelompok -->
+    <div class="footer-credit">
+        <p>Media Pembelajaran © Kelompok 5 PPL SMKN 3 Surabaya</p>
+    </div>
+
+    <!-- === SCRIPT JAVASCRIPT === -->
+    <script>
+        // 1. Data Materi Pembelajaran & Tantangan
+        const materials = {
+            1: {
+                title: "1. Balai Warga",
+                text: "Gotong royong adalah tradisi bekerja bersama-sama. Ini merupakan pengamalan nyata dari sila kelima Pancasila, di mana kepentingan bersama diutamakan.",
+                question: "Nilai apa yang paling penting dari kegiatan ini?",
+                challenge: {
+                    question: "Sila keberapa dalam Pancasila yang paling erat kaitannya dengan asas gotong royong warga?",
+                    options: ["A. Sila Pertama", "B. Sila Ketiga", "C. Sila Kelima"],
+                    correctIndex: 2
+                }
+            },
+            2: {
+                title: "2. Lapangan",
+                text: "Di lapangan ini, warga rutin melakukan kerja bakti membersihkan lingkungan dan fasilitas umum.",
+                question: "Pernahkah kamu mengikuti kegiatan kerja bakti?",
+                challenge: {
+                    question: "Apa manfaat utama dari kerja bakti rutin di lingkungan masyarakat?",
+                    options: ["A. Mendapatkan bayaran", "B. Menumbuhkan rasa saling memiliki lingkungan", "C. Menjadi ajang pamer"],
+                    correctIndex: 1
+                }
+            },
+            3: {
+                title: "3. Posko Bencana",
+                text: "Kepedulian sosial sangat diuji saat saudara kita mengalami musibah. Memberikan bantuan logistik atau moral adalah bentuk nyata kepedulian.",
+                question: "Bantuan apa yang paling mudah dilakukan remaja saat ada bencana?",
+                challenge: {
+                    question: "Jika ada teman di kelas yang terdampak banjir, tindakan sosial paling tepat yang bisa dikoordinasikan adalah...",
+                    options: ["A. Menonton beritanya di TV", "B. Menggalang dana sukarela di kelas", "C. Membiarkannya saja"],
+                    correctIndex: 1
+                }
+            },
+            4: {
+                title: "4. Studio DKV Mini",
+                text: "Sebagai siswa DKV, kemampuan desain poster/infografis sangat efektif untuk mengedukasi masyarakat dan menyebarkan semangat gotong royong.",
+                question: "Elemen desain apa yang paling pas untuk poster anak muda?",
+                challenge: {
+                    question: "Untuk membuat poster kampanye yang menarik bagi remaja, sebaiknya kita menggunakan gaya visual yang...",
+                    options: ["A. Kaku dan penuh teks panjang", "B. Menggunakan palet warna kusam", "C. Dinamis, warna cerah, tipografi tebal (bold)"],
+                    correctIndex: 2
+                }
+            },
+            5: {
+                title: "5. Papan Pengumuman",
+                text: "Tugas praktikmu hari ini adalah membuat sketsa konsep poster kampanye gotong royong.",
+                question: "Apa judul kegiatan di postermu?",
+                challenge: {
+                    question: "Mana dari berikut ini yang merupakan contoh kalimat 'Call to Action' (Ajakan) yang baik untuk poster?",
+                    options: ["A. 'Gotong royong adalah budaya.'", "B. 'Yuk, Bersihkan Selokan Bersama!'", "C. 'Definisi kebersihan.'"],
+                    correctIndex: 1
+                }
+            }
+        };
+
+        // Variabel penanda status
+        let currentLocationId = null;
+
+        // Elemen-elemen HTML yang sering dipanggil
+        const placeholderUI = document.getElementById('placeholder-ui');
+        const activeUI = document.getElementById('active-ui');
+        const titleEl = document.getElementById('content-title');
+        const textEl = document.getElementById('content-text');
+        const questionEl = document.getElementById('reflection-question');
+        
+        const challengeQuestionEl = document.getElementById('challenge-question');
+        const challengeOptionsEl = document.getElementById('challenge-options');
+        const challengeFeedbackEl = document.getElementById('challenge-feedback');
+
+        // 2. Fungsi ketika pin lokasi diklik
+        function openLocation(id) {
+            currentLocationId = id;
+            const data = materials[id];
+
+            // Tampilkan UI panel materi
+            placeholderUI.style.display = 'none';
+            activeUI.style.display = 'block';
+
+            // Masukkan teks ke HTML
+            titleEl.textContent = data.title;
+            textEl.textContent = data.text;
+            questionEl.textContent = "Refleksi: " + data.question;
+            
+            // Masukkan soal tantangan
+            loadChallenge(data.challenge);
+
+            // Tandai pin agar berubah warna menjadi hijau
+            document.getElementById(`pin-${id}`).classList.add('visited');
+            
+            // Bersihkan status pengiriman sebelumnya
+            document.getElementById('save-status').textContent = "";
+            document.getElementById('reflection-input').value = "";
+        }
+
+        // 3. Fungsi memuat soal pilihan ganda
+        function loadChallenge(challengeData) {
+            challengeQuestionEl.textContent = challengeData.question;
+            challengeOptionsEl.innerHTML = "";
+            challengeFeedbackEl.textContent = "";
+
+            challengeData.options.forEach((optionText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = optionText;
+                btn.onclick = () => checkAnswer(index, challengeData.correctIndex, btn);
+                challengeOptionsEl.appendChild(btn);
+            });
+        }
+
+        // 4. Fungsi memeriksa jawaban soal
+        function checkAnswer(selectedIndex, correctIndex, clickedBtn) {
+            const allButtons = challengeOptionsEl.querySelectorAll('.option-btn');
+            
+            // Kunci semua tombol
+            allButtons.forEach(b => {
+                b.classList.remove('correct', 'wrong');
+                b.disabled = true; 
+            });
+
+            if (selectedIndex === correctIndex) {
+                clickedBtn.classList.add('correct');
+                challengeFeedbackEl.style.color = "var(--primary-green)";
+                challengeFeedbackEl.textContent = "✨ Tepat sekali! Analisamu sangat tajam.";
+            } else {
+                clickedBtn.classList.add('wrong');
+                allButtons[correctIndex].classList.add('correct');
+                challengeFeedbackEl.style.color = "#c62828";
+                challengeFeedbackEl.textContent = "Belum tepat, tapi tidak apa-apa! Tetap semangat belajarnya ya.";
+            }
+        }
+
+        // 5. Fungsi mengirim data ke Google Sheets
+        function saveAnswer() {
+            const namaEl = document.getElementById('nama-siswa');
+            const absenEl = document.getElementById('absen-siswa');
+            const inputEl = document.getElementById('reflection-input');
+            const statusEl = document.getElementById('save-status');
+            const btnSimpan = document.getElementById('btn-simpan');
+            
+            // Cek apakah ada kolom yang kosong
+            if (namaEl.value.trim() === "" || absenEl.value.trim() === "" || inputEl.value.trim() === "") {
+                statusEl.style.color = "red";
+                statusEl.textContent = "Pastikan Nama, Absen, dan Jawaban sudah diisi semua ya!";
+                return;
+            }
+
+            // Ubah tampilan tombol saat proses loading
+            btnSimpan.textContent = "Mengirim...";
+            btnSimpan.disabled = true;
+            statusEl.textContent = "";
+
+            // !!! PENTING: Ganti tulisan di bawah ini dengan URL Google Script milikmu !!!
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbzXjCCEObkoGqlkH1_6J0NhFr5L7-sS2kX-kMTOX6Skt-dLWbWReeQshHwoTRbVWl2M/exec';
+            
+            // Data yang akan dikirim
+            const dataYangDikirim = {
+                nama: namaEl.value.trim(),
+                absen: absenEl.value.trim(),
+                lokasi: materials[currentLocationId].title,
+                jawaban: inputEl.value.trim()
+            };
+
+            // Menggunakan Fetch API untuk mengirim data
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(dataYangDikirim)
+            })
+            .then(() => {
+                // Jika sukses
+                statusEl.style.color = "var(--primary-green)";
+                statusEl.textContent = "✨ Jawaban berhasil terkirim ke Bapak/Ibu Guru!";
+                
+                btnSimpan.textContent = "Kirim ke Guru";
+                btnSimpan.disabled = false;
+                
+                // Kosongkan jawaban, tapi biarkan nama & absen
+                inputEl.value = ""; 
+                
+                setTimeout(() => statusEl.textContent = "", 4000);
+            })
+            .catch(error => {
+                // Jika gagal (biasanya karena koneksi internet)
+                statusEl.style.color = "red";
+                statusEl.textContent = "Gagal mengirim. Pastikan internetmu menyala ya!";
+                
+                btnSimpan.textContent = "Coba Kirim Lagi";
+                btnSimpan.disabled = false;
+            });
+        }
+
+        // 6. Pasang fungsi klik pada semua pin SVG
+        document.querySelectorAll('.pin').forEach(pin => {
+            const id = pin.id.split('-')[1]; 
+            pin.addEventListener('click', () => openLocation(id));
+        });
+    </script>
+</body>
+</html>
